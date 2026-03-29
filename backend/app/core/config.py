@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     OLLAMA_CHAT_MODEL: str = "llama3.2:3b"
     OLLAMA_EMBED_MODEL: str = "nomic-embed-text"
     OLLAMA_REQUEST_TIMEOUT_SECONDS: int = Field(default=180, ge=30, le=1800)
+    HF_API_TOKEN: str = ""
+    HF_CHAT_MODEL: str = "google/gemma-2-2b-it"
+    HF_BASE_URL: str = "https://router.huggingface.co/v1/chat/completions"
+    HF_REQUEST_TIMEOUT_SECONDS: int = Field(default=180, ge=30, le=1800)
     CORS_ALLOW_ORIGINS: str = Field(
         default="http://localhost:8501,http://127.0.0.1:8501"
     )

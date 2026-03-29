@@ -1,8 +1,8 @@
 # AI Interview Copilot
 
-AI Interview Copilot is a production-style interview preparation platform that helps a user upload a resume and job description, generate tailored interview questions with free local LLMs, submit answers, receive structured feedback, and track progress over time.
+AI Interview Copilot is a production-style interview preparation platform that helps a user upload a resume and job description, generate tailored interview questions with free local LLMs or a hosted production model, submit answers, receive structured feedback, and track progress over time.
 
-The repository is intentionally built as a portfolio-ready full-stack project: FastAPI on the backend, Streamlit on the frontend, PostgreSQL for persistence, Docker Compose for local orchestration, Ollama for free local model inference, and a modular codebase that is easy to extend.
+The repository is intentionally built as a portfolio-ready full-stack project: FastAPI on the backend, Streamlit on the frontend, PostgreSQL for persistence, Docker Compose for local orchestration, Ollama for free local model inference, Hugging Face for hosted production inference, and a modular codebase that is easy to extend.
 
 ## Why This Project Exists
 
@@ -20,6 +20,7 @@ Interview prep tools are often either generic question banks or thin wrappers ar
 - Job description ingestion and storage
 - Deterministic parsing for skills, domains, roles, and experience
 - Local LLM-powered interview question generation with Ollama
+- Hosted production inference via Hugging Face Inference Providers
 - Interview sessions with persisted generated questions
 - Answer submission with rubric-style evaluation
 - Authenticated user accounts with JWT-based access control
@@ -34,6 +35,7 @@ Interview prep tools are often either generic question banks or thin wrappers ar
 - Frontend: Streamlit
 - Database: PostgreSQL
 - Local AI runtime: Ollama
+- Hosted production AI runtime: Hugging Face Inference Providers
 - Auth: JWT + passlib/bcrypt
 - Testing: pytest, FastAPI TestClient
 - Containers: Docker, Docker Compose
@@ -158,27 +160,57 @@ python3 -m streamlit run app.py
 
 If you run the backend locally without Docker, make sure `DATABASE_URL` and `OLLAMA_BASE_URL` point to services reachable from your machine.
 
-## Deployment Readiness
+## Deployment
 
-The repo now includes a deployment-oriented baseline:
+The recommended production split is:
 
-- non-root backend and frontend containers
-- explicit dev/prod config flags
-- configurable CORS settings
-- liveness and readiness endpoints
-- production Compose override
+- Frontend: Streamlit Community Cloud
+- Backend: Render Web Service
+- Database: Render Postgres
+- Hosted model provider: Hugging Face Inference Providers
 
-Production-style startup:
+### Backend on Render
 
-```bash
-cp backend/.env.production.example backend/.env
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+The repository includes a Render blueprint at [`render.yaml`](/Users/dhananjay/ai-interview-copilot/ai-interview-copilot/render.yaml). It provisions:
+
+- a Python web service for `backend/`
+- a managed PostgreSQL database
+
+Important production environment variables:
+
+```env
+DATABASE_URL=<Render Postgres connection string>
+MODEL_PROVIDER=huggingface
+HF_API_TOKEN=<your Hugging Face token>
+HF_CHAT_MODEL=google/gemma-2-2b-it
+HF_BASE_URL=https://router.huggingface.co/v1/chat/completions
+CORS_ALLOW_ORIGINS=https://your-streamlit-app.streamlit.app
+SECRET_KEY=<strong random secret>
+RUN_RELOAD=false
 ```
 
-Operational endpoints:
+The backend uses:
 
+- `GET /health`
 - `GET /livez`
 - `GET /readyz`
+
+for operational checks in production.
+
+### Frontend on Streamlit Community Cloud
+
+Deploy the frontend with:
+
+- branch: `production`
+- main file: `frontend/app.py`
+
+Set the frontend runtime values to point at the public backend:
+
+```toml
+BACKEND_URL = "https://your-backend.onrender.com"
+BACKEND_BROWSER_URL = "https://your-backend.onrender.com"
+API_TIMEOUT_SECONDS = "180"
+```
 
 ## Product Flow
 
