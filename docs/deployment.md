@@ -68,7 +68,7 @@ Recommended deployment targets for this project:
 
 - Railway for the FastAPI backend and PostgreSQL database
 - Streamlit Community Cloud for the frontend
-- Hugging Face Inference Providers for hosted production question generation
+- OpenRouter for hosted production question generation
 
 ## Practical Notes
 

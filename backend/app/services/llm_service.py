@@ -1,6 +1,5 @@
 import json
 from abc import ABC, abstractmethod
-from typing import Any
 from urllib import error, request
 
 from app.core.config import settings
@@ -24,6 +23,62 @@ class BaseLLMProvider(ABC):
     @abstractmethod
     def generate(self, prompt: str) -> str:
         raise NotImplementedError
+
+    def _chat_completion_request(
+        self,
+        *,
+        endpoint: str,
+        api_key: str,
+        model: str,
+        prompt: str,
+        timeout_seconds: int,
+        extra_headers: dict[str, str] | None = None,
+    ) -> str:
+        payload = json.dumps(
+            {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 1200,
+            }
+        ).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        if extra_headers:
+            headers.update(extra_headers)
+        req = request.Request(
+            endpoint,
+            data=payload,
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with request.urlopen(req, timeout=timeout_seconds) as response:
+                body = json.loads(response.read().decode("utf-8"))
+        except error.HTTPError as exc:
+            try:
+                detail = exc.read().decode("utf-8")
+            except Exception:
+                detail = str(exc)
+            raise LLMProviderError(
+                f"{self.provider_name.title()} request failed: {detail}"
+            ) from exc
+        except Exception as exc:
+            raise LLMProviderError(
+                f"{self.provider_name.title()} request failed: {exc}"
+            ) from exc
+
+        choices = body.get("choices") or []
+        if not choices:
+            raise LLMProviderError(f"{self.provider_name.title()} returned no choices.")
+        message = choices[0].get("message") or {}
+        generated = str(message.get("content") or "").strip()
+        if not generated:
+            raise LLMProviderError(
+                f"{self.provider_name.title()} returned an empty response."
+            )
+        return generated
 
 
 class OllamaLLMProvider(BaseLLMProvider):
@@ -77,51 +132,44 @@ class HuggingFaceLLMProvider(BaseLLMProvider):
     def generate(self, prompt: str) -> str:
         if not settings.HF_API_TOKEN:
             raise LLMProviderError("HF_API_TOKEN is required when MODEL_PROVIDER=huggingface.")
-
-        payload = json.dumps(
-            {
-                "model": settings.HF_CHAT_MODEL,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
-                "max_tokens": 1200,
-            }
-        ).encode("utf-8")
-        req = request.Request(
-            settings.HF_BASE_URL,
-            data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {settings.HF_API_TOKEN}",
-            },
-            method="POST",
+        return self._chat_completion_request(
+            endpoint=settings.HF_BASE_URL,
+            api_key=settings.HF_API_TOKEN,
+            model=settings.HF_CHAT_MODEL,
+            prompt=prompt,
+            timeout_seconds=settings.HF_REQUEST_TIMEOUT_SECONDS,
         )
-        try:
-            with request.urlopen(
-                req,
-                timeout=settings.HF_REQUEST_TIMEOUT_SECONDS,
-            ) as response:
-                body = json.loads(response.read().decode("utf-8"))
-        except error.HTTPError as exc:
-            try:
-                detail = exc.read().decode("utf-8")
-            except Exception:
-                detail = str(exc)
-            raise LLMProviderError(f"Hugging Face request failed: {detail}") from exc
-        except Exception as exc:
-            raise LLMProviderError(f"Hugging Face request failed: {exc}") from exc
 
-        choices = body.get("choices") or []
-        if not choices:
-            raise LLMProviderError("Hugging Face returned no choices.")
-        message = choices[0].get("message") or {}
-        generated = str(message.get("content") or "").strip()
-        if not generated:
-            raise LLMProviderError("Hugging Face returned an empty response.")
-        return generated
+
+class OpenRouterLLMProvider(BaseLLMProvider):
+    @property
+    def provider_name(self) -> str:
+        return "openrouter"
+
+    @property
+    def model_name(self) -> str:
+        return settings.OPENROUTER_MODEL
+
+    def generate(self, prompt: str) -> str:
+        if not settings.OPENROUTER_API_KEY:
+            raise LLMProviderError(
+                "OPENROUTER_API_KEY is required when MODEL_PROVIDER=openrouter."
+            )
+
+        extra_headers: dict[str, str] = {}
+        if settings.OPENROUTER_SITE_URL:
+            extra_headers["HTTP-Referer"] = settings.OPENROUTER_SITE_URL
+        if settings.OPENROUTER_APP_NAME:
+            extra_headers["X-Title"] = settings.OPENROUTER_APP_NAME
+
+        return self._chat_completion_request(
+            endpoint=settings.OPENROUTER_BASE_URL,
+            api_key=settings.OPENROUTER_API_KEY,
+            model=settings.OPENROUTER_MODEL,
+            prompt=prompt,
+            timeout_seconds=settings.OPENROUTER_REQUEST_TIMEOUT_SECONDS,
+            extra_headers=extra_headers,
+        )
 
 
 class LLMService:
@@ -133,6 +181,8 @@ class LLMService:
             return OllamaLLMProvider()
         if settings.MODEL_PROVIDER == "huggingface":
             return HuggingFaceLLMProvider()
+        if settings.MODEL_PROVIDER == "openrouter":
+            return OpenRouterLLMProvider()
         raise LLMProviderError(
             f"Unsupported MODEL_PROVIDER '{settings.MODEL_PROVIDER}'."
         )

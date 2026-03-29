@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     HF_CHAT_MODEL: str = "google/gemma-2-2b-it"
     HF_BASE_URL: str = "https://router.huggingface.co/v1/chat/completions"
     HF_REQUEST_TIMEOUT_SECONDS: int = Field(default=180, ge=30, le=1800)
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "openrouter/auto"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1/chat/completions"
+    OPENROUTER_REQUEST_TIMEOUT_SECONDS: int = Field(default=180, ge=30, le=1800)
+    OPENROUTER_SITE_URL: str = ""
+    OPENROUTER_APP_NAME: str = "AI Interview Copilot"
     CORS_ALLOW_ORIGINS: str = Field(
         default="http://localhost:8501,http://127.0.0.1:8501"
     )

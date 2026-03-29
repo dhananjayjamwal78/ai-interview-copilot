@@ -2,7 +2,7 @@
 
 AI Interview Copilot is a production-style interview preparation platform that helps a user upload a resume and job description, generate tailored interview questions with free local LLMs or a hosted production model, submit answers, receive structured feedback, and track progress over time.
 
-The repository is intentionally built as a portfolio-ready full-stack project: FastAPI on the backend, Streamlit on the frontend, PostgreSQL for persistence, Docker Compose for local orchestration, Ollama for free local model inference, Hugging Face for hosted production inference, and a modular codebase that is easy to extend.
+The repository is intentionally built as a portfolio-ready full-stack project: FastAPI on the backend, Streamlit on the frontend, PostgreSQL for persistence, Docker Compose for local orchestration, Ollama for free local model inference, OpenRouter for hosted production inference, and a modular codebase that is easy to extend.
 
 ## Why This Project Exists
 
@@ -20,7 +20,7 @@ Interview prep tools are often either generic question banks or thin wrappers ar
 - Job description ingestion and storage
 - Deterministic parsing for skills, domains, roles, and experience
 - Local LLM-powered interview question generation with Ollama
-- Hosted production inference via Hugging Face Inference Providers
+- Hosted production inference via OpenRouter
 - Interview sessions with persisted generated questions
 - Answer submission with rubric-style evaluation
 - Authenticated user accounts with JWT-based access control
@@ -35,7 +35,7 @@ Interview prep tools are often either generic question banks or thin wrappers ar
 - Frontend: Streamlit
 - Database: PostgreSQL
 - Local AI runtime: Ollama
-- Hosted production AI runtime: Hugging Face Inference Providers
+- Hosted production AI runtime: OpenRouter
 - Auth: JWT + passlib/bcrypt
 - Testing: pytest, FastAPI TestClient
 - Containers: Docker, Docker Compose
@@ -167,7 +167,7 @@ The recommended production split is:
 - Frontend: Streamlit Community Cloud
 - Backend: Railway
 - Database: Railway PostgreSQL
-- Hosted model provider: Hugging Face Inference Providers
+- Hosted model provider: OpenRouter
 
 ### Backend on Railway
 
@@ -187,11 +187,13 @@ Important production environment variables:
 
 ```env
 DATABASE_URL=<Railway PostgreSQL DATABASE_URL>
-MODEL_PROVIDER=huggingface
-HF_API_TOKEN=<your Hugging Face token>
-HF_CHAT_MODEL=google/gemma-2-2b-it
-HF_BASE_URL=https://router.huggingface.co/v1/chat/completions
-HF_REQUEST_TIMEOUT_SECONDS=180
+MODEL_PROVIDER=openrouter
+OPENROUTER_API_KEY=<your OpenRouter API key>
+OPENROUTER_MODEL=openrouter/auto
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1/chat/completions
+OPENROUTER_REQUEST_TIMEOUT_SECONDS=180
+OPENROUTER_SITE_URL=https://your-streamlit-app.streamlit.app
+OPENROUTER_APP_NAME=AI Interview Copilot
 CORS_ALLOW_ORIGINS=https://your-streamlit-app.streamlit.app
 SECRET_KEY=<strong random secret>
 RUN_RELOAD=false
