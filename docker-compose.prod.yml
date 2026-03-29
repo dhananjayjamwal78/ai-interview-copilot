@@ -1,0 +1,22 @@
+services:
+  db:
+    restart: always
+
+  ollama:
+    restart: always
+
+  backend:
+    environment:
+      DEBUG: "false"
+      ENVIRONMENT: production
+      ENABLE_DOCS: "false"
+      ENABLE_OPENAPI: "false"
+      ENABLE_REDOC: "false"
+      RUN_RELOAD: "false"
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ./backend/storage:/app/storage
+    restart: always
+
+  frontend:
+    restart: always
