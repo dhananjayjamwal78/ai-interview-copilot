@@ -64,17 +64,16 @@ For production, set `CORS_ALLOW_ORIGINS` to your real frontend origin rather tha
 
 ## Deployment Recommendations
 
-Reasonable deployment targets for this project:
+Recommended deployment targets for this project:
 
-- Render or Railway for simple app hosting
-- Fly.io for container-first deployment
-- AWS ECS or EC2 for more explicit infrastructure control
-- DigitalOcean Droplets or App Platform for straightforward Docker hosting
+- Railway for the FastAPI backend and PostgreSQL database
+- Streamlit Community Cloud for the frontend
+- Hugging Face Inference Providers for hosted production question generation
 
 ## Practical Notes
 
 - Replace the default `SECRET_KEY` before any real deployment.
 - Use a managed PostgreSQL instance if you want easier persistence operations.
 - Consider putting the backend behind a reverse proxy such as Nginx or Caddy.
-- Ollama can be resource-heavy; choose a deployment target with enough memory for the selected model.
+- For production, use a hosted model provider instead of local Ollama.
 - If you deploy frontend and backend separately, update `BACKEND_URL` and `CORS_ALLOW_ORIGINS` together.
