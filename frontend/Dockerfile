@@ -12,12 +12,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     adduser --disabled-password --gecos "" appuser
 
-COPY app ./app
+COPY app.py .
+COPY utils ./utils
 
-RUN mkdir -p /app/storage/uploads && chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app
 
 USER appuser
 
-EXPOSE 8000
+EXPOSE 8501
 
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]
