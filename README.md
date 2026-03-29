@@ -165,28 +165,38 @@ If you run the backend locally without Docker, make sure `DATABASE_URL` and `OLL
 The recommended production split is:
 
 - Frontend: Streamlit Community Cloud
-- Backend: Render Web Service
-- Database: Render Postgres
+- Backend: Railway
+- Database: Railway PostgreSQL
 - Hosted model provider: Hugging Face Inference Providers
 
-### Backend on Render
+### Backend on Railway
 
-The repository includes a Render blueprint at [`render.yaml`](/Users/dhananjay/ai-interview-copilot/ai-interview-copilot/render.yaml). It provisions:
+The backend directory now includes Railway-friendly files:
 
-- a Python web service for `backend/`
-- a managed PostgreSQL database
+- [`backend/Procfile`](/Users/dhananjay/ai-interview-copilot/ai-interview-copilot/backend/Procfile)
+- [`backend/nixpacks.toml`](/Users/dhananjay/ai-interview-copilot/ai-interview-copilot/backend/nixpacks.toml)
+- [`backend/.python-version`](/Users/dhananjay/ai-interview-copilot/ai-interview-copilot/backend/.python-version)
+
+Recommended Railway service settings:
+
+- Root Directory: `backend`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
 Important production environment variables:
 
 ```env
-DATABASE_URL=<Render Postgres connection string>
+DATABASE_URL=<Railway PostgreSQL DATABASE_URL>
 MODEL_PROVIDER=huggingface
 HF_API_TOKEN=<your Hugging Face token>
 HF_CHAT_MODEL=google/gemma-2-2b-it
 HF_BASE_URL=https://router.huggingface.co/v1/chat/completions
+HF_REQUEST_TIMEOUT_SECONDS=180
 CORS_ALLOW_ORIGINS=https://your-streamlit-app.streamlit.app
 SECRET_KEY=<strong random secret>
 RUN_RELOAD=false
+ENVIRONMENT=production
+DEBUG=false
 ```
 
 The backend uses:
@@ -196,6 +206,20 @@ The backend uses:
 - `GET /readyz`
 
 for operational checks in production.
+
+### PostgreSQL on Railway
+
+Inside the same Railway project:
+
+1. Add a PostgreSQL database service.
+2. Open the database service and confirm it provides `DATABASE_URL`.
+3. In the backend service, add or map:
+
+```env
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+```
+
+If you paste the value manually, keep the full Railway connection string exactly as provided.
 
 ### Frontend on Streamlit Community Cloud
 
@@ -207,8 +231,8 @@ Deploy the frontend with:
 Set the frontend runtime values to point at the public backend:
 
 ```toml
-BACKEND_URL = "https://your-backend.onrender.com"
-BACKEND_BROWSER_URL = "https://your-backend.onrender.com"
+BACKEND_URL = "https://your-backend.up.railway.app"
+BACKEND_BROWSER_URL = "https://your-backend.up.railway.app"
 API_TIMEOUT_SECONDS = "180"
 ```
 
